@@ -28,9 +28,11 @@ export interface QuickPickItem {
   prot_g: number;
   carb_g: number;
   fat_g: number;
-  serving_size?: number;
-  serving_unit?: string;
-  servings?: number;
+  num_serv?: number;
+  serv_cal?: number;
+  serv_prot?: number;
+  serv_carb?: number;
+  serv_fat?: number;
   micros?: Record<string, number>;
   cal_100g?: number;
   prot_100g?: number;
@@ -108,9 +110,6 @@ export function useFoodSearchLookup(
     prot_100g?: number;
     carb_100g?: number;
     fat_100g?: number;
-    serving_size?: number;
-    serving_size_g?: number;
-    serving_unit?: string;
     micros?: Record<string, number>;
   }) => {
     let templateId = item.template_id;
@@ -134,7 +133,6 @@ export function useFoodSearchLookup(
       const prot = item.prot_g ?? item.prot_100g ?? 0;
       const carb = item.carb_g ?? item.carb_100g ?? 0;
       const fat = item.fat_g ?? item.fat_100g ?? 0;
-      const sSize = item.serving_size ?? item.serving_size_g ?? 100;
       const normalizedName = item.name
         .trim()
         .replace(/\s*\([^)]*\)\s*$/, '')
@@ -148,8 +146,6 @@ export function useFoodSearchLookup(
           prot_g: prot,
           carb_g: carb,
           fat_g: fat,
-          serving_size: sSize,
-          serving_unit: item.serving_unit || 'g',
           is_public: true,
           micros: item.micros,
         })) || undefined;
@@ -189,9 +185,8 @@ export function useFoodSearchLookup(
         });
         const isRecipeMatch = !!matchedRecipe;
 
-        const servingSize = m.serving_size || matchedRecipe?.serving_size || undefined;
-        const servingUnit = m.serving_unit || matchedRecipe?.serving_unit || 'g';
-        const servings = m.servings || 1;
+        const numServ = m.num_serv || matchedRecipe?.num_serv || 1;
+        const servCal = m.serv_cal ?? matchedRecipe?.serv_cal ?? m.cal;
         const micros = (m.micros || matchedRecipe?.micros) as Record<string, number> | undefined;
 
         list.push({
@@ -204,9 +199,11 @@ export function useFoodSearchLookup(
           prot_g: m.prot_g || m.protein_g || matchedRecipe?.prot_g || 0,
           carb_g: m.carb_g || m.carbs_g || matchedRecipe?.carb_g || 0,
           fat_g: m.fat_g || matchedRecipe?.fat_g || 0,
-          serving_size: servingSize,
-          serving_unit: servingUnit,
-          servings: servings,
+          num_serv: numServ,
+          serv_cal: servCal,
+          serv_prot: m.serv_prot ?? matchedRecipe?.serv_prot,
+          serv_carb: m.serv_carb ?? matchedRecipe?.serv_carb,
+          serv_fat: m.serv_fat ?? matchedRecipe?.serv_fat,
           micros: micros,
         });
 
@@ -295,8 +292,8 @@ export function useFoodSearchLookup(
               prot_100g: cachedTmpl.prot_g,
               carb_100g: cachedTmpl.carb_g,
               fat_100g: cachedTmpl.fat_g,
-              serving_size_g: cachedTmpl.serving_size || 100,
-              serving_label: `${cachedTmpl.serving_size || 100}${cachedTmpl.serving_unit || 'g'}`,
+              serving_size_g: cachedTmpl.num_serv ?? 100,
+              serving_label: cachedTmpl.num_serv ? `${cachedTmpl.num_serv} serving(s)` : '100g',
               micros,
             });
           } else {
@@ -347,8 +344,6 @@ export function useFoodSearchLookup(
                       prot_g: Math.round(prot * 10) / 10,
                       carb_g: Math.round(carb * 10) / 10,
                       fat_g: Math.round(fat * 10) / 10,
-                      serving_size: servingSizeVal,
-                      serving_unit: servingUnitVal,
                       is_public: true,
                       barcode: q,
                     },

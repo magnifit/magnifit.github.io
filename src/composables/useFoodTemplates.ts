@@ -64,8 +64,11 @@ export function useFoodTemplates(userIdRef?: { value: string | undefined }) {
             prot_g: t.prot_g || 0,
             carb_g: t.carb_g || 0,
             fat_g: t.fat_g || 0,
-            serving_size: t.serving_size,
-            serving_unit: t.serving_unit || 'g',
+            num_serv: t.num_serv || 1,
+            serv_cal: t.serv_cal ?? null,
+            serv_prot: t.serv_prot ?? null,
+            serv_carb: t.serv_carb ?? null,
+            serv_fat: t.serv_fat ?? null,
             is_public: !!t.is_public,
             is_favorite: true,
           });
@@ -117,8 +120,7 @@ export function useFoodTemplates(userIdRef?: { value: string | undefined }) {
     prot_g: number;
     carb_g: number;
     fat_g: number;
-    serving_size?: number | null;
-    serving_unit?: string | null;
+    num_serv?: number;
     is_public?: boolean;
     micros?: Micronutrients;
   }): Promise<string | null> => {
@@ -136,8 +138,7 @@ export function useFoodTemplates(userIdRef?: { value: string | undefined }) {
       prot_g: Math.round((data.prot_g || 0) * 10) / 10,
       carb_g: Math.round((data.carb_g || 0) * 10) / 10,
       fat_g: Math.round((data.fat_g || 0) * 10) / 10,
-      serving_size: data.serving_size !== undefined ? data.serving_size : 100,
-      serving_unit: data.serving_unit || 'g',
+      num_serv: data.num_serv || 1,
       is_public: isPublic,
     };
 

@@ -12,8 +12,7 @@ interface NutritionData {
   prot_g: number
   carb_g: number
   fat_g: number
-  serving_size?: string | number
-  serving_unit?: string
+  num_serv?: number
   servings?: number
   micros?: Record<string, number | undefined>
 }
@@ -31,7 +30,7 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'save-micros', micros: Record<string, number>): void
   (e: 'save-meal', payload: {
-    servings: number
+    num_serv: number
     cal: number
     prot_g: number
     carb_g: number
@@ -82,7 +81,7 @@ watch(
   () => props.data,
   (newData) => {
     isEditing.value = false
-    const initialServings = Number(newData?.servings || 1)
+    const initialServings = Number((newData?.num_serv ?? newData?.servings) || 1)
     editableServings.value = initialServings
 
     // Calculate base values per single serving (1.0)
@@ -164,7 +163,7 @@ const handleSave = () => {
 
   const s = Number(editableServings.value) || 1
   emit('save-meal', {
-    servings: s,
+    num_serv: s,
     cal: Math.round(baseCal.value * s),
     prot_g: Math.round(baseProt.value * s * 10) / 10,
     carb_g: Math.round(baseCarb.value * s * 10) / 10,
@@ -188,8 +187,8 @@ const handleSave = () => {
       <!-- Servings & Base size Row -->
       <div class="flex items-center justify-between gap-3 py-1.5 border-b border-slate-800/60 pb-3">
         <div class="text-xs font-semibold text-slate-300">
-          <span v-if="data.serving_size">Serving Size: <span class="font-mono text-slate-400 font-normal ml-1">{{ data.serving_size }}</span></span>
-          <span v-else>Servings</span>
+          <span v-if="data.num_serv && data.num_serv > 1">Servings</span>
+          <span v-else>Yield</span>
         </div>
 
         <div class="flex items-center gap-1.5">
@@ -207,8 +206,8 @@ const handleSave = () => {
             <span class="text-xs text-slate-400">x</span>
           </template>
           <template v-else>
-            <span class="text-xs font-bold font-mono text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-md">
-              {{ data.servings || 1 }} serving{{ (data.servings || 1) !== 1 ? 's' : '' }}
+            <span v-if="data.num_serv && data.num_serv > 1" class="text-xs font-mono text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-md">
+              {{ data.num_serv }}x servings
             </span>
           </template>
         </div>

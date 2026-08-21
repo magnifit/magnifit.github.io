@@ -31,15 +31,6 @@ const slotLabel = computed(() => {
   if (flags & MealFlags.SNACK) return 'Snack'
   return null
 })
-
-const r2 = (v: number) => Math.round(v * 100) / 100
-const s = computed(() => props.meal.servings || 1)
-
-const displayCal  = computed(() => Math.round((props.meal.calories || props.meal.cal || 0) * s.value))
-const displayProt = computed(() => r2((props.meal.protein_g || props.meal.prot_g || 0) * s.value))
-const displayCarb = computed(() => r2((props.meal.carbs_g  || props.meal.carb_g  || 0) * s.value))
-const displayFat  = computed(() => r2((props.meal.fat_g    || 0)                       * s.value))
-
 </script>
 
 <template>
@@ -64,9 +55,9 @@ const displayFat  = computed(() => r2((props.meal.fat_g    || 0)                
           </span>
         </div>
         <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-2 font-mono">
-          <span class="text-emerald-400">P: {{ displayProt }}g</span>
-          <span class="text-yellow-400">C: {{ displayCarb }}g</span>
-          <span class="text-rose-400">F: {{ displayFat }}g</span>
+          <span class="text-emerald-400">P: {{ meal.protein_g || meal.prot_g || 0 }}g</span>
+          <span class="text-yellow-400">C: {{ meal.carbs_g || meal.carb_g || 0 }}g</span>
+          <span class="text-rose-400">F: {{ meal.fat_g || 0 }}g</span>
         </div>
       </div>
     </div>
@@ -76,10 +67,10 @@ const displayFat  = computed(() => r2((props.meal.fat_g    || 0)                
       <!-- Top / Left: Calories & Servings Subtitle -->
       <div class="text-right flex flex-col justify-center">
         <div class="font-bold font-mono text-amber-400 text-sm leading-tight whitespace-nowrap">
-          {{ displayCal }} <span class="text-xs font-normal text-slate-400">kcal</span>
+          {{ meal.calories || meal.cal || 0 }} <span class="text-xs font-normal text-slate-400">kcal</span>
         </div>
-        <div v-if="meal.servings && meal.servings > 0" class="text-[10px] font-mono text-slate-500 mt-0.5 leading-tight whitespace-nowrap">
-          servings: {{ meal.servings }}
+        <div v-if="meal.num_serv && meal.num_serv > 1" class="text-[10px] font-mono text-slate-500 mt-0.5 leading-tight whitespace-nowrap">
+          {{ meal.num_serv }}x servings
         </div>
       </div>
 
@@ -105,11 +96,7 @@ const displayFat  = computed(() => r2((props.meal.fat_g    || 0)                
       :data="{
         title: meal.name,
         subtitle: meal.brand || undefined,
-        serving_size: meal.serving_size 
-          ? `${meal.serving_size}${meal.serving_unit || 'g'}`
-          : undefined,
-        serving_unit: meal.serving_unit || 'g',
-        servings: meal.servings || 1,
+        servings: meal.num_serv || 1,
         cal: meal.calories || meal.cal || 0,
         prot_g: meal.protein_g || meal.prot_g || 0,
         carb_g: meal.carbs_g || meal.carb_g || 0,
@@ -119,7 +106,7 @@ const displayFat  = computed(() => r2((props.meal.fat_g    || 0)                
       @save-meal="(updated) => {
         emit('edit', {
           ...meal,
-          servings: updated.servings,
+          num_serv: updated.num_serv || 1,
           cal: updated.cal,
           prot_g: updated.prot_g,
           carb_g: updated.carb_g,

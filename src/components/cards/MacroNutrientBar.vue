@@ -49,12 +49,6 @@ const carbsCal = computed(() => (props.carbsG || 0) * 4)
 const fatCal = computed(() => (props.fatG || 0) * 9)
 const totalMacroCal = computed(() => proteinCal.value + carbsCal.value + fatCal.value)
 
-// Display values rounded to 2dp
-const r2 = (v: number) => Math.round(v * 100) / 100
-const proteinDisplay = computed(() => r2(props.proteinG || 0))
-const carbsDisplay = computed(() => r2(props.carbsG || 0))
-const fatDisplay = computed(() => r2(props.fatG || 0))
-
 const proteinPct = computed(() =>
   totalMacroCal.value > 0 ? Math.min(100, Math.round((proteinCal.value / totalMacroCal.value) * 100)) : 0
 )
@@ -108,7 +102,7 @@ const fatDeg = computed(() => {
             class="w-full h-full rounded-full bg-slate-900 flex flex-col items-center justify-center shadow-lg select-none">
             <span v-if="isLoading" class="text-xs text-slate-500 font-bold">--</span>
             <template v-else>
-              <span class="text-xs sm:text-sm font-black text-slate-100 leading-none">{{ proteinDisplay }}g</span>
+              <span class="text-xs sm:text-sm font-black text-slate-100 leading-none">{{ proteinG }}g</span>
               <span class="text-[9px] sm:text-[10px] font-bold text-emerald-400 mt-0.5">{{ proteinPct }}%</span>
             </template>
           </div>
@@ -131,7 +125,7 @@ const fatDeg = computed(() => {
             class="w-full h-full rounded-full bg-slate-900 flex flex-col items-center justify-center shadow-lg select-none">
             <span v-if="isLoading" class="text-xs text-slate-500 font-bold">--</span>
             <template v-else>
-              <span class="text-xs sm:text-sm font-black text-slate-100 leading-none">{{ carbsDisplay }}g</span>
+              <span class="text-xs sm:text-sm font-black text-slate-100 leading-none">{{ carbsG }}g</span>
               <span class="text-[9px] sm:text-[10px] font-bold text-amber-400 mt-0.5">{{ carbsPct }}%</span>
             </template>
           </div>
@@ -154,7 +148,7 @@ const fatDeg = computed(() => {
             class="w-full h-full rounded-full bg-slate-900 flex flex-col items-center justify-center shadow-lg select-none">
             <span v-if="isLoading" class="text-xs text-slate-500 font-bold">--</span>
             <template v-else>
-              <span class="text-xs sm:text-sm font-black text-slate-100 leading-none">{{ fatDisplay }}g</span>
+              <span class="text-xs sm:text-sm font-black text-slate-100 leading-none">{{ fatG }}g</span>
               <span class="text-[9px] sm:text-[10px] font-bold text-rose-400 mt-0.5">{{ fatPct }}%</span>
             </template>
           </div>

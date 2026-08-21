@@ -112,9 +112,11 @@ const confirmLogFavorite = () => {
     prot_g: scaledProt,
     carb_g: scaledCarb,
     fat_g: scaledFat,
-    serving_size: t.serving_size,
-    serving_unit: t.serving_unit || 'g',
-    servings,
+    num_serv: servings,
+    serv_cal: t.serv_cal ?? Math.round(t.cal / (t.num_serv || 1)),
+    serv_prot: t.serv_prot ?? null,
+    serv_carb: t.serv_carb ?? null,
+    serv_fat: t.serv_fat ?? null,
     slotBit: logSlotBit.value,
     micros: Object.keys(scaledMicros).length > 0 ? scaledMicros : undefined
   })
@@ -164,8 +166,8 @@ const confirmLogFavorite = () => {
             <div class="text-xs text-slate-400 pt-0.5 flex items-center gap-1.5 truncate">
               <span v-if="fav.template?.brand" class="font-medium text-slate-300">{{ fav.template.brand }} •</span>
               <span>{{ fav.template?.cal }} kcal</span>
-              <span v-if="fav.template?.serving_size" class="text-slate-500">
-                ({{ fav.template.serving_size }}{{ fav.template.serving_unit || 'g' }})
+              <span v-if="fav.template?.num_serv && fav.template?.num_serv > 1" class="text-slate-500">
+                ({{ fav.template.num_serv }} servings)
               </span>
             </div>
           </div>
@@ -200,8 +202,8 @@ const confirmLogFavorite = () => {
               prot_100g: fav.template?.prot_g || 0,
               carb_100g: fav.template?.carb_g || 0,
               fat_100g: fav.template?.fat_g || 0,
-              serving_size_g: fav.template?.serving_size || undefined,
-              serving_label: fav.template?.serving_size ? `${fav.template.serving_size}${fav.template.serving_unit || 'g'}` : undefined,
+              serving_size_g: fav.template?.num_serv || 1,
+              serving_label: fav.template?.num_serv ? `${fav.template.num_serv} servings` : undefined,
               micros: (fav.custom_micros || fav.template?.micros) as Record<string, number> | undefined
             }"
               class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-amber-500/50 text-slate-400 hover:text-amber-300 transition cursor-pointer"
@@ -238,8 +240,8 @@ const confirmLogFavorite = () => {
           <div class="text-sm font-bold text-slate-100">{{ loggingFavorite.template?.name }}</div>
           <div class="text-xs text-slate-400 pt-0.5">
             Base portion: {{ loggingFavorite.template?.cal }} kcal
-            <span v-if="loggingFavorite.template?.serving_size">
-              • {{ loggingFavorite.template.serving_size }}{{ loggingFavorite.template.serving_unit || 'g' }}
+            <span v-if="loggingFavorite.template?.num_serv && loggingFavorite.template?.num_serv > 1">
+              • {{ loggingFavorite.template.num_serv }} servings per recipe
             </span>
           </div>
         </div>

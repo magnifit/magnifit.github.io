@@ -31,9 +31,11 @@ const emit = defineEmits<{
     prot_g: number
     carb_g: number
     fat_g: number
-    serving_size?: number
-    serving_unit?: string
-    servings?: number
+    num_serv?: number
+    serv_cal?: number | null
+    serv_prot?: number | null
+    serv_carb?: number | null
+    serv_fat?: number | null
     template_id?: string
     micros?: Record<string, number>
   }): void
@@ -90,9 +92,11 @@ const handleConfirmFoodServing = (details: {
     prot_g: details.scaledProt,
     carb_g: details.scaledCarb,
     fat_g: details.scaledFat,
-    serving_size: servingUnitGrams.value || 100,
-    serving_unit: 'g',
-    servings: servingCount.value || 1,
+    num_serv: servingCount.value || 1,
+    serv_cal: details.scaledCal,
+    serv_prot: details.scaledProt,
+    serv_carb: details.scaledCarb,
+    serv_fat: details.scaledFat,
     template_id: selectedFood.value.template_id,
     micros: Object.keys(details.scaledMicros).length > 0 ? details.scaledMicros : undefined
   }
@@ -105,9 +109,7 @@ const handleConfirmFoodServing = (details: {
       prot_g: selectedFood.value.prot_100g,
       carb_g: selectedFood.value.carb_100g,
       fat_g: selectedFood.value.fat_100g,
-      serving_size: servingUnitGrams.value || 100,
-      serving_unit: 'g',
-      is_public: true,
+      num_serv: servingUnitGrams.value || 1,
       micros: selectedFood.value.micros
     }).then(tId => {
       if (tId) foodPayload.template_id = tId
@@ -152,9 +154,11 @@ const handleConfirmQuickPickServing = () => {
     prot_g: scaledProt,
     carb_g: scaledCarb,
     fat_g: scaledFat,
-    serving_size: item.serving_size,
-    serving_unit: item.serving_unit || 'g',
-    servings: servings,
+    num_serv: servings,
+    serv_cal: Math.round(item.cal * servings),
+    serv_prot: Math.round(item.prot_g * servings * 10) / 10,
+    serv_carb: Math.round(item.carb_g * servings * 10) / 10,
+    serv_fat: Math.round(item.fat_g * servings * 10) / 10,
     template_id: item.template_id,
     micros: Object.keys(scaledMicros).length > 0 ? scaledMicros : undefined
   })

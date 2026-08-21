@@ -145,9 +145,7 @@ const openEditModal = (tmpl: MealTemplate) => {
   editingTemplateId.value = tmpl.id || null
   newName.value = tmpl.name
   newDescription.value = tmpl.description || ''
-  newServings.value = tmpl.servings || 1
-  newServingSize.value = tmpl.serving_size || null
-  newServingUnit.value = tmpl.serving_unit || 'g'
+  newServings.value = tmpl.num_serv || 1
   newIngredients.value = (tmpl.items || []).map((i: any) => ({
     item_name: i.item_name || i.name,
     name: i.item_name || i.name,
@@ -200,9 +198,7 @@ const handleCreateTemplate = () => {
     prot_g: perServingTotals.value.prot_g,
     carb_g: perServingTotals.value.carb_g,
     fat_g: perServingTotals.value.fat_g,
-    servings: newServings.value || 1,
-    serving_size: newServingSize.value || null,
-    serving_unit: newServingSize.value ? (newServingUnit.value?.trim() || 'g') : (newServingUnit.value?.trim() || null),
+    num_serv: newServings.value || 1,
     items: newIngredients.value.map((i: any) => ({
       item_name: i.name || i.item_name,
       amount: i.amount,
@@ -302,13 +298,9 @@ const confirmLog = () => {
             <div class="flex items-center gap-2 flex-wrap">
               <span class="text-sm font-bold text-slate-100 group-hover:text-amber-300 transition">{{ tmpl.name
                 }}</span>
-              <span v-if="tmpl.servings && tmpl.servings > 1"
+              <span v-if="tmpl.num_serv && tmpl.num_serv > 1"
                 class="px-1.5 py-0.2 rounded-md bg-slate-950 border border-slate-800 text-[10px] font-mono text-amber-400/90">
-                {{ tmpl.servings }} servings
-              </span>
-              <span v-if="tmpl.serving_size"
-                class="px-1.5 py-0.2 rounded-md bg-slate-950 border border-slate-800 text-[10px] font-mono text-slate-400">
-                {{ tmpl.serving_size }}{{ tmpl.serving_unit || 'g' }}
+                {{ tmpl.num_serv }} servings
               </span>
             </div>
             <div v-if="tmpl.description" class="text-xs text-slate-400 mt-0.5 line-clamp-1">{{ tmpl.description }}</div>
@@ -374,15 +366,9 @@ const confirmLog = () => {
           <FormInput v-model="newServings" type="number" step="any" label="Yield (Servings)" placeholder="1" required
             min="0.1" max="50" input-class="focus:border-amber-500 font-mono text-xs text-center py-2.5 px-3.5" />
 
-          <div class="space-y-1">
-            <label class="text-xs font-semibold text-slate-300">Serving Size</label>
-            <div class="flex gap-1">
-              <FormInput v-model="newServingSize" type="number" step="any" min="0.1" placeholder="200"
-                input-class="focus:border-amber-500 font-mono text-xs text-center py-2.5 px-2" class="w-16 shrink-0" />
-              <FormInput v-model="newServingUnit" type="text" placeholder="g / qty"
-                input-class="focus:border-amber-500 text-xs py-2.5 px-2" class="flex-1 min-w-0" />
+            <div class="space-y-1">
+              <!-- Serving size field removed; replaced by num_serv in grid above -->
             </div>
-          </div>
         </div>
 
         <!-- Ingredients Builder with Mode Tabs -->
@@ -471,8 +457,7 @@ const confirmLog = () => {
         <div v-if="newIngredients.length > 0" class="p-3 rounded-xl bg-slate-950/90 border border-slate-800 space-y-2">
           <div class="flex items-center justify-between text-xs">
             <span class="font-bold text-amber-300">
-              Per Serving <span class="font-normal text-slate-400">({{ newServings }} yield{{ newServingSize ? ` •
-                ${newServingSize}${newServingUnit || 'g'}` : '' }})</span>
+              Per Serving <span class="font-normal text-slate-400">({{ newServings }} yield)</span>
             </span>
             <span v-if="newServings > 1" class="text-[11px] font-mono text-slate-500">
               Batch Total: {{ batchTotals.cal }} kcal
@@ -517,8 +502,8 @@ const confirmLog = () => {
         <div>
           <div class="text-sm font-bold text-slate-100">{{ selectedTemplateForLog.name }}</div>
           <div class="text-xs text-slate-400 font-mono mt-0.5">
-            1 Serving = {{ selectedTemplateForLog.cal }} kcal • P:{{ selectedTemplateForLog.prot_g }}g • C:{{
-              selectedTemplateForLog.carb_g }}g • F:{{ selectedTemplateForLog.fat_g }}g
+            1 Serving = {{ selectedTemplateForLog.serv_cal ?? selectedTemplateForLog.cal }} kcal • P:{{ selectedTemplateForLog.serv_prot ?? selectedTemplateForLog.prot_g }}g • C:{{
+              selectedTemplateForLog.serv_carb ?? selectedTemplateForLog.carb_g }}g • F:{{ selectedTemplateForLog.serv_fat ?? selectedTemplateForLog.fat_g }}g
           </div>
         </div>
 
@@ -545,7 +530,7 @@ const confirmLog = () => {
           <FormInput v-model="logMultiplier" type="number" step="any" label="Number of Servings (Multiplier)" min="0.1"
             max="20" input-class="focus:border-amber-500 font-mono py-2" class="w-32" />
           <div class="text-xs font-mono text-amber-400 font-bold pb-3">
-            = {{ Math.round(selectedTemplateForLog.cal * (logMultiplier || 1)) }} kcal total
+            = {{ Math.round(selectedTemplateForLog.serv_cal ?? selectedTemplateForLog.cal) * (logMultiplier || 1) }} kcal total
           </div>
         </div>
 

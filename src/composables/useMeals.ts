@@ -5,10 +5,6 @@ import { getLocalISODate } from '../lib/dateUtils';
 import { offlineSync } from '../lib/offlineSync';
 import type { Meal, Recipe, RecipeItem } from '../types/fitness';
 
-const r2 = (v: number | undefined | null) => Math.round((v || 0) * 100) / 100;
-const roundMicros = (m: object = {}): Record<string, number> =>
-  Object.fromEntries(Object.entries(m).map(([k, v]) => [k, typeof v === 'number' ? r2(v) : v]));
-
 export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<string>, loggedDates: Ref<string[]>) {
   const meals = ref<Meal[]>([]);
   const loading = ref(false);
@@ -18,13 +14,13 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
     meals.value.filter((m) => (m.log_date || getLocalISODate(m.ts)) === selectedDate.value),
   );
 
-  // Computed total nutritional macros on selectedDate — DB stores per-serving values; multiply here
+  // Computed total nutritional macros on selectedDate
   const totalCaloriesConsumed = computed(() =>
-    filteredMeals.value.reduce((acc, m) => acc + (m.cal || m.calories || 0) * (m.servings || 1), 0),
+    filteredMeals.value.reduce((acc, m) => acc + (m.cal || m.calories || 0), 0),
   );
-  const totalProteinG = computed(() => filteredMeals.value.reduce((acc, m) => acc + (m.prot_g || m.protein_g || 0) * (m.servings || 1), 0));
-  const totalCarbsG = computed(() => filteredMeals.value.reduce((acc, m) => acc + (m.carb_g || m.carbs_g || 0) * (m.servings || 1), 0));
-  const totalFatG = computed(() => filteredMeals.value.reduce((acc, m) => acc + (m.fat_g || 0) * (m.servings || 1), 0));
+  const totalProteinG = computed(() => filteredMeals.value.reduce((acc, m) => acc + (m.prot_g || m.protein_g || 0), 0));
+  const totalCarbsG = computed(() => filteredMeals.value.reduce((acc, m) => acc + (m.carb_g || m.carbs_g || 0), 0));
+  const totalFatG = computed(() => filteredMeals.value.reduce((acc, m) => acc + (m.fat_g || 0), 0));
 
   const fetchMeals = async (uid?: string) => {
     const targetUid = uid || userId.value;
@@ -91,13 +87,15 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
       name: isTemplated || isRecipe ? null : mealData.name,
       brand: isTemplated || isRecipe ? null : mealData.brand || null,
       cal: isTemplated || isRecipe ? null : Math.round(mealData.cal || mealData.calories || 0),
-      prot_g: isTemplated || isRecipe ? null : r2(mealData.prot_g || mealData.protein_g),
-      carb_g: isTemplated || isRecipe ? null : r2(mealData.carb_g || mealData.carbs_g),
-      fat_g: isTemplated || isRecipe ? null : r2(mealData.fat_g),
+      prot_g: isTemplated || isRecipe ? null : Math.round((mealData.prot_g || mealData.protein_g || 0) * 10) / 10,
+      carb_g: isTemplated || isRecipe ? null : Math.round((mealData.carb_g || mealData.carbs_g || 0) * 10) / 10,
+      fat_g: isTemplated || isRecipe ? null : Math.round((mealData.fat_g || 0) * 10) / 10,
       flags: finalFlags,
-      serving_size: isTemplated || isRecipe ? null : mealData.serving_size || null,
-      serving_unit: isTemplated || isRecipe ? null : mealData.serving_unit || null,
-      servings: mealData.servings || 1,
+      num_serv: mealData.num_serv || 1.0,
+      serv_cal: isTemplated || isRecipe ? null : Math.round(mealData.cal || mealData.calories || 0),
+      serv_prot: isTemplated || isRecipe ? null : Math.round((mealData.prot_g || mealData.protein_g || 0) * 10) / 10,
+      serv_carb: isTemplated || isRecipe ? null : Math.round((mealData.carb_g || mealData.carbs_g || 0) * 10) / 10,
+      serv_fat: isTemplated || isRecipe ? null : Math.round((mealData.fat_g || 0) * 10) / 10,
       template_id: mealData.template_id || null,
       log_date: payload.log_date,
     };
@@ -110,7 +108,7 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
         await supabase.from('micronutrients').insert([
           {
             meal_id: id,
-            ...roundMicros(mealData.micros),
+            ...mealData.micros,
           },
         ]);
       }
@@ -131,7 +129,7 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
 
     if (isTemplated || isRecipe) {
       if (oldMeal) {
-        const ratio = (mealData.servings || 1) / (oldMeal.servings || 1);
+        const ratio = (mealData.num_serv || 1) / (oldMeal.num_serv || 1);
         const calMatches = Math.abs((mealData.cal || 0) - (oldMeal.cal || 0) * ratio) < 1.5;
         const protMatches = Math.abs((mealData.prot_g || 0) - (oldMeal.prot_g || 0) * ratio) < 0.15;
         const carbMatches = Math.abs((mealData.carb_g || 0) - (oldMeal.carb_g || 0) * ratio) < 0.15;
@@ -141,13 +139,15 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
           name: mealData.name === oldMeal.name ? null : mealData.name,
           brand: mealData.brand === oldMeal.brand ? null : mealData.brand || null,
           cal: calMatches ? null : Math.round(mealData.cal || 0),
-          prot_g: protMatches ? null : r2(mealData.prot_g),
-          carb_g: carbMatches ? null : r2(mealData.carb_g),
-          fat_g: fatMatches ? null : r2(mealData.fat_g),
+          prot_g: protMatches ? null : Math.round((mealData.prot_g || 0) * 10) / 10,
+          carb_g: carbMatches ? null : Math.round((mealData.carb_g || 0) * 10) / 10,
+          fat_g: fatMatches ? null : Math.round((mealData.fat_g || 0) * 10) / 10,
           flags: finalFlags,
-          serving_size: mealData.serving_size === oldMeal.serving_size ? null : mealData.serving_size || null,
-          serving_unit: mealData.serving_unit === oldMeal.serving_unit ? null : mealData.serving_unit || null,
-          servings: mealData.servings || 1,
+          num_serv: mealData.num_serv || 1.0,
+          serv_cal: calMatches ? null : Math.round(mealData.cal || 0),
+          serv_prot: protMatches ? null : Math.round((mealData.prot_g || 0) * 10) / 10,
+          serv_carb: carbMatches ? null : Math.round((mealData.carb_g || 0) * 10) / 10,
+          serv_fat: fatMatches ? null : Math.round((mealData.fat_g || 0) * 10) / 10,
           template_id: mealData.template_id || null,
         };
       } else {
@@ -159,9 +159,11 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
           carb_g: null,
           fat_g: null,
           flags: finalFlags,
-          serving_size: null,
-          serving_unit: null,
-          servings: mealData.servings || 1,
+          num_serv: mealData.num_serv || 1.0,
+          serv_cal: null,
+          serv_prot: null,
+          serv_carb: null,
+          serv_fat: null,
           template_id: mealData.template_id || null,
         };
       }
@@ -170,13 +172,15 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
         name: mealData.name,
         brand: mealData.brand || null,
         cal: Math.round(mealData.cal || mealData.calories || 0),
-        prot_g: r2(mealData.prot_g || mealData.protein_g),
-        carb_g: r2(mealData.carb_g || mealData.carbs_g),
-        fat_g: r2(mealData.fat_g),
+        prot_g: Math.round((mealData.prot_g || mealData.protein_g || 0) * 10) / 10,
+        carb_g: Math.round((mealData.carb_g || mealData.carbs_g || 0) * 10) / 10,
+        fat_g: Math.round((mealData.fat_g || 0) * 10) / 10,
         flags: finalFlags,
-        serving_size: mealData.serving_size || null,
-        serving_unit: mealData.serving_unit || null,
-        servings: mealData.servings || 1,
+        num_serv: mealData.num_serv || 1.0,
+        serv_cal: Math.round(mealData.cal || mealData.calories || 0),
+        serv_prot: Math.round((mealData.prot_g || mealData.protein_g || 0) * 10) / 10,
+        serv_carb: Math.round((mealData.carb_g || mealData.carbs_g || 0) * 10) / 10,
+        serv_fat: Math.round((mealData.fat_g || 0) * 10) / 10,
         template_id: null,
       };
     }
@@ -194,7 +198,7 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
       } else if (mealData.micros && Object.keys(mealData.micros).length > 0) {
         await supabase.from('micronutrients').upsert({
           meal_id: mealData.id,
-          ...roundMicros(mealData.micros),
+          ...mealData.micros,
         });
       }
     } catch {
@@ -277,12 +281,14 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
       name: recipeData.name || 'Custom Meal Combo',
       description: recipeData.description || null,
       cal: Math.round(recipeData.cal || 0),
-      prot_g: Math.round((recipeData.prot_g || 0) * 100) / 100,
-      carb_g: Math.round((recipeData.carb_g || 0) * 100) / 100,
-      fat_g: Math.round((recipeData.fat_g || 0) * 100) / 100,
-      servings: Math.max(0.1, Math.round(Number(recipeData.servings || 1) * 10) / 10),
-      serving_size: recipeData.serving_size !== undefined ? recipeData.serving_size : null,
-      serving_unit: recipeData.serving_unit || 'g',
+      prot_g: Math.round((recipeData.prot_g || 0) * 10) / 10,
+      carb_g: Math.round((recipeData.carb_g || 0) * 10) / 10,
+      fat_g: Math.round((recipeData.fat_g || 0) * 10) / 10,
+      num_serv: Math.max(0.1, Math.round(Number(recipeData.num_serv || 1) * 10) / 10),
+      serv_cal: recipeData.serv_cal !== undefined ? Math.round(recipeData.serv_cal) : null,
+      serv_prot: recipeData.serv_prot !== undefined ? Math.round(recipeData.serv_prot) : null,
+      serv_carb: recipeData.serv_carb !== undefined ? Math.round(recipeData.serv_carb) : null,
+      serv_fat: recipeData.serv_fat !== undefined ? Math.round(recipeData.serv_fat) : null,
       flags: recipeData.flags || 0,
       is_public: recipeData.is_public || false,
     };
@@ -309,13 +315,13 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
             id: item.id || uuidv7(),
             recipe_id: id,
             template_id: item.template_id || null,
-            item_name: hasTemplate ? null : item.item_name || item.name || 'Ingredient',
+            item_name: hasTemplate ? null : (item.item_name || item.name || 'Ingredient'),
             amount: Number(item.amount) || 1,
             unit: item.unit || 'g',
             cal: hasTemplate ? null : Math.round(item.cal || 0),
-            prot_g: hasTemplate ? null : r2(item.prot_g),
-            carb_g: hasTemplate ? null : r2(item.carb_g),
-            fat_g: hasTemplate ? null : r2(item.fat_g),
+            prot_g: hasTemplate ? null : Math.round((item.prot_g || 0) * 10) / 10,
+            carb_g: hasTemplate ? null : Math.round((item.carb_g || 0) * 10) / 10,
+            fat_g: hasTemplate ? null : Math.round((item.fat_g || 0) * 10) / 10,
           };
           await supabase.from('recipe_items').insert(itemPayload);
         }
@@ -325,7 +331,7 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
       if (recipeData.micros && Object.keys(recipeData.micros).length > 0) {
         await supabase.from('recipe_micronutrients').insert({
           recipe_id: id,
-          ...roundMicros(recipeData.micros),
+          ...recipeData.micros,
         });
       }
     } catch {
@@ -340,12 +346,14 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
       name: recipeData.name,
       description: recipeData.description || null,
       cal: Math.round(recipeData.cal || 0),
-      prot_g: r2(recipeData.prot_g),
-      carb_g: r2(recipeData.carb_g),
-      fat_g: r2(recipeData.fat_g),
-      servings: Math.max(0.1, Math.round(Number(recipeData.servings || 1) * 10) / 10),
-      serving_size: recipeData.serving_size !== undefined ? recipeData.serving_size : null,
-      serving_unit: recipeData.serving_unit || 'g',
+      prot_g: Math.round((recipeData.prot_g || 0) * 10) / 10,
+      carb_g: Math.round((recipeData.carb_g || 0) * 10) / 10,
+      fat_g: Math.round((recipeData.fat_g || 0) * 10) / 10,
+      num_serv: Math.max(0.1, Math.round(Number(recipeData.num_serv || 1) * 10) / 10),
+      serv_cal: recipeData.serv_cal !== undefined ? Math.round(recipeData.serv_cal) : null,
+      serv_prot: recipeData.serv_prot !== undefined ? Math.round(recipeData.serv_prot) : null,
+      serv_carb: recipeData.serv_carb !== undefined ? Math.round(recipeData.serv_carb) : null,
+      serv_fat: recipeData.serv_fat !== undefined ? Math.round(recipeData.serv_fat) : null,
     };
 
     const idx = recipes.value.findIndex((r: Recipe) => r.id === recipeData.id);
@@ -368,13 +376,13 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
             id: item.id || uuidv7(),
             recipe_id: recipeData.id,
             template_id: item.template_id || null,
-            item_name: hasTemplate ? null : item.item_name || item.name || 'Ingredient',
+            item_name: hasTemplate ? null : (item.item_name || item.name || 'Ingredient'),
             amount: item.amount || 1,
             unit: item.unit || 'serving',
-            cal: hasTemplate ? null : Math.round(item.cal || 0),
-            prot_g: hasTemplate ? null : r2(item.prot_g),
-            carb_g: hasTemplate ? null : r2(item.carb_g),
-            fat_g: hasTemplate ? null : r2(item.fat_g),
+            cal: hasTemplate ? null : (item.cal || 0),
+            prot_g: hasTemplate ? null : (item.prot_g || 0),
+            carb_g: hasTemplate ? null : (item.carb_g || 0),
+            fat_g: hasTemplate ? null : (item.fat_g || 0),
           };
           await supabase.from('recipe_items').insert(itemPayload);
         }
@@ -386,7 +394,7 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
         if (Object.keys(recipeData.micros).length > 0) {
           await supabase.from('recipe_micronutrients').insert({
             recipe_id: recipeData.id,
-            ...roundMicros(recipeData.micros),
+            ...recipeData.micros,
           });
         }
       }
@@ -414,17 +422,21 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
 
   const logRecipeAsMeal = async (recipe: Recipe, targetSlot: number, dateStr?: string, multiplier: number = 1) => {
     if (!userId.value) return;
+    const servCal = recipe.serv_cal ?? recipe.cal;
+    const mealCal = Math.round(servCal * multiplier);
     const mealPayload: Meal = {
       user_id: userId.value,
       name: recipe.name,
       brand: null,
-      cal: recipe.cal,
-      prot_g: recipe.prot_g,
-      carb_g: recipe.carb_g,
-      fat_g: recipe.fat_g,
-      serving_size: recipe.serving_size ? recipe.serving_size : undefined,
-      serving_unit: recipe.serving_unit || 'g',
-      servings: multiplier,
+      cal: mealCal,
+      prot_g: Math.round((recipe.serv_prot ?? recipe.prot_g) * multiplier),
+      carb_g: Math.round((recipe.serv_carb ?? recipe.carb_g) * multiplier),
+      fat_g: Math.round((recipe.serv_fat ?? recipe.fat_g) * multiplier),
+      num_serv: multiplier,
+      serv_cal: Math.round(servCal),
+      serv_prot: Math.round(recipe.serv_prot ?? recipe.prot_g),
+      serv_carb: Math.round(recipe.serv_carb ?? recipe.carb_g),
+      serv_fat: Math.round(recipe.serv_fat ?? recipe.fat_g),
       template_id: recipe.id,
       flags: targetSlot | 512,
       log_date: dateStr || selectedDate.value,
@@ -435,17 +447,21 @@ export function useMeals(userId: Ref<string | undefined>, selectedDate: Ref<stri
 
   const logTemplateAsMeal = async (template: any, targetSlot: number, dateStr?: string, multiplier: number = 1) => {
     if (!userId.value) return;
+    const servCal = template.serv_cal ?? template.cal;
+    const mealCal = Math.round(servCal * multiplier);
     const mealPayload: Meal = {
       user_id: userId.value,
       name: template.name,
       brand: template.brand || null,
-      cal: template.cal,
-      prot_g: template.prot_g,
-      carb_g: template.carb_g,
-      fat_g: template.fat_g,
-      serving_size: template.serving_size ? template.serving_size : undefined,
-      serving_unit: template.serving_unit || 'g',
-      servings: multiplier,
+      cal: mealCal,
+      prot_g: Math.round((template.serv_prot ?? template.prot_g) * multiplier),
+      carb_g: Math.round((template.serv_carb ?? template.carb_g) * multiplier),
+      fat_g: Math.round((template.serv_fat ?? template.fat_g) * multiplier),
+      num_serv: multiplier,
+      serv_cal: Math.round(servCal),
+      serv_prot: Math.round(template.serv_prot ?? template.prot_g),
+      serv_carb: Math.round(template.serv_carb ?? template.carb_g),
+      serv_fat: Math.round(template.serv_fat ?? template.fat_g),
       template_id: template.id,
       flags: targetSlot,
       log_date: dateStr || selectedDate.value,

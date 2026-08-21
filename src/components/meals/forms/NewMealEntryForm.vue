@@ -39,6 +39,7 @@ const fatG = ref<number | null>(null)
 const servingSize = ref<number | null>(null)
 const servingUnit = ref<string>('g')
 const servingsCount = ref<number>(1)
+const servingsMultiplier = ref<number>(1)
 const selectedMealSlot = ref<number>(props.initialSlot)
 
 watch(() => props.initialSlot, (newSlot) => {
@@ -63,21 +64,18 @@ const handleFoodSelected = (food: {
   prot_g: number
   carb_g: number
   fat_g: number
-  serving_size?: number
-  serving_unit?: string
-  servings?: number
+  num_serv?: number
+  serv_cal?: number | null
+  serv_prot?: number | null
+  serv_carb?: number | null
+  serv_fat?: number | null
   template_id?: string
   type?: string
   micros?: Record<string, number>
 }) => {
   let formattedName = food.name.trim()
-  if (food.serving_size && !formattedName.includes('(')) {
-    const sUnit = food.serving_unit || 'g'
-    const sCount = food.servings || 1
-    const servingDetail = sCount !== 1
-      ? `(${sCount}x ${food.serving_size}${sUnit})`
-      : `(${food.serving_size}${sUnit})`
-    formattedName = `${formattedName} ${servingDetail}`
+  if (food.num_serv && food.num_serv > 1 && !formattedName.includes('(')) {
+    formattedName = `${formattedName} (${food.num_serv}x)`
   }
 
   const isRecipe = food.type === 'recipe'
@@ -91,9 +89,11 @@ const handleFoodSelected = (food: {
     prot_g: food.prot_g || 0,
     carb_g: food.carb_g || 0,
     fat_g: food.fat_g || 0,
-    serving_size: food.serving_size || null,
-    serving_unit: food.serving_size ? (food.serving_unit || 'g') : 'g',
-    servings: food.servings || 1,
+    num_serv: food.num_serv || 1.0,
+    serv_cal: food.serv_cal ?? (food.num_serv === 1 ? Math.round(food.cal || 0) : null),
+    serv_prot: food.serv_prot ?? (food.num_serv === 1 ? Math.round(food.prot_g || 0) : null),
+    serv_carb: food.serv_carb ?? (food.num_serv === 1 ? Math.round(food.carb_g || 0) : null),
+    serv_fat: food.serv_fat ?? (food.num_serv === 1 ? Math.round(food.fat_g || 0) : null),
     template_id: food.template_id || null,
     flags: finalFlags,
     micros: food.micros && Object.keys(food.micros).length > 0 ? food.micros : undefined,
@@ -115,11 +115,8 @@ const handleSubmit = () => {
   if (!mealName.value.trim() || calories.value === null) return
 
   let formattedName = mealName.value.trim()
-  if (servingSize.value && !formattedName.includes('(')) {
-    const servingDetail = servingsCount.value !== 1
-      ? `(${servingsCount.value}x ${servingSize.value}${servingUnit.value})`
-      : `(${servingSize.value}${servingUnit.value})`
-    formattedName = `${formattedName} ${servingDetail}`
+  if (servingsMultiplier.value > 1 && !formattedName.includes('(')) {
+    formattedName = `${formattedName} (${servingsMultiplier.value}x)`
   }
 
   emit('submit', {
@@ -129,9 +126,11 @@ const handleSubmit = () => {
     prot_g: proteinG.value || 0,
     carb_g: carbsG.value || 0,
     fat_g: fatG.value || 0,
-    serving_size: servingSize.value || null,
-    serving_unit: servingSize.value ? servingUnit.value : 'g',
-    servings: servingsCount.value || 1,
+    num_serv: servingsMultiplier.value || 1.0,
+    serv_cal: Math.round(calories.value || 0),
+    serv_prot: Math.round(proteinG.value || 0),
+    serv_carb: Math.round(carbsG.value || 0),
+    serv_fat: Math.round(fatG.value || 0),
     flags: selectedMealSlot.value,
     micros: Object.keys(mealMicros.value).length > 0 ? mealMicros.value : undefined,
     log_date: props.logDate
@@ -147,6 +146,7 @@ const handleSubmit = () => {
   servingSize.value = null
   servingUnit.value = 'g'
   servingsCount.value = 1
+  servingsMultiplier.value = 1
   mealMicros.value = {}
 }
 </script>

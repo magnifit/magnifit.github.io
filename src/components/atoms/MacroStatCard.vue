@@ -46,12 +46,6 @@ const carbsCal = computed(() => (props.carbsG || 0) * 4)
 const fatCal = computed(() => (props.fatG || 0) * 9)
 const totalMacroCal = computed(() => proteinCal.value + carbsCal.value + fatCal.value)
 
-// Display values rounded to 2dp
-const r2 = (v: number) => Math.round(v * 100) / 100
-const proteinDisplay = computed(() => r2(props.proteinG || 0))
-const carbsDisplay = computed(() => r2(props.carbsG || 0))
-const fatDisplay = computed(() => r2(props.fatG || 0))
-
 const proteinPct = computed(() =>
   totalMacroCal.value > 0 ? Math.min(100, Math.round((proteinCal.value / totalMacroCal.value) * 100)) : 0
 )
@@ -64,7 +58,8 @@ const fatPct = computed(() =>
 </script>
 
 <template>
-  <div class="relative bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col divide-y divide-slate-800/80 transition-all duration-300 h-full">
+  <div
+    class="relative bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col divide-y divide-slate-800/80 transition-all duration-300 h-full">
 
     <!-- Protein Row -->
     <div class="relative flex flex-1 items-center gap-2 px-2.5 overflow-hidden select-none">
@@ -73,10 +68,11 @@ const fatPct = computed(() =>
         :style="{ width: isActivated && !isLoading ? `${proteinPct}%` : '0%' }">
         <div class="absolute top-0 right-0 inset-y-0 w-0.5 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]" />
       </div>
-      <span class="relative z-10 text-[10px] font-black uppercase tracking-widest text-emerald-400 w-4 shrink-0">P</span>
+      <span
+        class="relative z-10 text-[10px] font-black uppercase tracking-widest text-emerald-400 w-4 shrink-0">P</span>
       <span class="relative z-10 flex-1 text-sm font-black text-slate-100 tabular-nums">
         <span v-if="isLoading" class="text-slate-500">--</span>
-        <span v-else>{{ proteinDisplay }}g</span>
+        <span v-else>{{ proteinG }}g</span>
       </span>
       <span class="relative z-10 text-[10px] font-bold text-slate-400 tabular-nums shrink-0">
         {{ isLoading ? '--' : `${proteinPct}%` }}
@@ -93,7 +89,7 @@ const fatPct = computed(() =>
       <span class="relative z-10 text-[10px] font-black uppercase tracking-widest text-amber-400 w-4 shrink-0">C</span>
       <span class="relative z-10 flex-1 text-sm font-black text-slate-100 tabular-nums">
         <span v-if="isLoading" class="text-slate-500">--</span>
-        <span v-else>{{ carbsDisplay }}g</span>
+        <span v-else>{{ carbsG }}g</span>
       </span>
       <span class="relative z-10 text-[10px] font-bold text-slate-400 tabular-nums shrink-0">
         {{ isLoading ? '--' : `${carbsPct}%` }}
@@ -110,12 +106,11 @@ const fatPct = computed(() =>
       <span class="relative z-10 text-[10px] font-black uppercase tracking-widest text-rose-400 w-4 shrink-0">F</span>
       <span class="relative z-10 flex-1 text-sm font-black text-slate-100 tabular-nums">
         <span v-if="isLoading" class="text-slate-500">--</span>
-        <span v-else>{{ fatDisplay }}g</span>
+        <span v-else>{{ fatG }}g</span>
       </span>
       <span class="relative z-10 text-[10px] font-bold text-slate-400 tabular-nums shrink-0">
         {{ isLoading ? '--' : `${fatPct}%` }}
       </span>
     </div>
-
   </div>
 </template>

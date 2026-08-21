@@ -32,72 +32,26 @@ const startCamera = async () => {
       await videoRef.value.play()
     }
 
-    let detector: { detect: (video: HTMLVideoElement) => Promise<any[]> } | null = null;
-    const requestedFormats = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'qr_code', 'code_128', 'code_39'];
+    // Universal BarcodeDetector: native API if available, else WASM polyfill
+    const DetectorClass = ('BarcodeDetector' in window)
+      ? (window as any).BarcodeDetector
+      : (await import('barcode-detector')).BarcodeDetector
 
-    if ('BarcodeDetector' in window) {
-      try {
-        const supportedFormats = await (window as any).BarcodeDetector.getSupportedFormats();
-        if (supportedFormats.length > 0) {
-          detector = new (window as any).BarcodeDetector({ formats: requestedFormats });
-          console.log("Scanner: Native Initialized");
-        } else {
-          console.warn("Scanner: Native is a 'ghost' API. Falling back.");
-        }
-      } catch (e) {
-        console.warn("Scanner: Error verifying Native API. Falling back.", e);
-      }
-    }
-
-    if (!detector && typeof WebAssembly === 'object') {
-      try {
-        const DetectorClass = (await import('barcode-detector')).BarcodeDetector;
-        detector = new DetectorClass({ formats: requestedFormats as any });
-        console.log("Scanner: WASM Polyfill Initialized");
-      } catch (wasmErr) {
-        console.warn("Scanner: WASM polyfill failed (strict privacy/JIT blocked). Falling back.", wasmErr);
-      }
-    }
-
-    if (!detector) {
-      try {
-        const { BrowserMultiFormatReader } = await import('@zxing/browser');
-        const zxingReader = new BrowserMultiFormatReader();
-        console.log("Scanner: Pure JS (ZXing) Initialized");
-
-        detector = {
-          detect: async (video: HTMLVideoElement) => {
-            try {
-              const result = zxingReader.decode(video);
-              return result ? [{ rawValue: result.getText() }] : [];
-            } catch (e) {
-              return []; // Return empty array to mimic BarcodeDetector behavior
-            }
-          }
-        };
-      } catch (zxingErr) {
-        console.error("Scanner Setup Failed: No barcode capabilities available.", zxingErr);
-        return; // Complete failure, exit setup
-      }
-    }
+    const detector = new DetectorClass({
+      formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'qr_code', 'code_128', 'code_39']
+    })
 
     scanInterval = setInterval(async () => {
       if (!videoRef.value || videoRef.value.readyState < 2 || videoRef.value.paused) return
-
       try {
-        const barcodes = await detector!.detect(videoRef.value)
-
+        const barcodes = await detector.detect(videoRef.value)
         if (barcodes.length > 0) {
           emit('detected', barcodes[0].rawValue)
         }
-      } catch (err) {
-        // Ignore frame read errors
-      }
+      } catch { }
     }, 500)
-
   } catch (err: any) {
     // Camera denied or unavailable
-    console.error("Camera or stream setup failed:", err);
   }
 }
 

@@ -99,9 +99,11 @@ const handleLogFavorite = async (item: {
   prot_g: number
   carb_g: number
   fat_g: number
-  serving_size?: number | null
-  serving_unit?: string | null
-  servings: number
+  num_serv?: number
+  serv_cal?: number | null
+  serv_prot?: number | null
+  serv_carb?: number | null
+  serv_fat?: number | null
   slotBit: number
   micros?: any
 }) => {
@@ -113,9 +115,11 @@ const handleLogFavorite = async (item: {
     prot_g: item.prot_g,
     carb_g: item.carb_g,
     fat_g: item.fat_g,
-    serving_size: item.serving_size || null,
-    serving_unit: item.serving_unit || 'g',
-    servings: item.servings,
+    num_serv: item.num_serv || 1,
+    serv_cal: item.serv_cal,
+    serv_prot: item.serv_prot,
+    serv_carb: item.serv_carb,
+    serv_fat: item.serv_fat,
     template_id: item.template_id,
     flags: item.slotBit,
     micros: item.micros,
